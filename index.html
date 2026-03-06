@@ -3,80 +3,366 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RENDER</title>
+    <title>HOLOSPHERE // RENDER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+           RENDER — Retro Cyberpunk Holosphere
+           "Futuro de los 2000s"
+           ============================================================ */
+
+        :root {
+            --bg:      #000000;
+            --white:   #ffffff;
+            --dim:     #bbbbbb;
+            --muted:   #555555;
+            --card:    #030303;
+            --cyan:    #00e5ff;
+            --cyan-dim:#004d5a;
+            --border:  #ffffff;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background: #0f0f1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: var(--bg);
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            color: var(--white);
             min-height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .card {
-            background: linear-gradient(145deg, #353535, #616161);
-            border: 1px solid rgba(70, 70, 70, 0.808);
-            border-radius: 24px;
-            padding: 28px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 16px;
-            width: 520px;
-        }
-        .card-header { text-align: center; }
-        .card-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.04em;
-        }
-        .card-header p {
-            font-size: 0.82rem;
-            color: rgba(255,255,255,0.4);
-            margin-top: 4px;
-        }
-        #canvas-container {
-            width: 460px;
-            height: 360px;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.07);
-            background: #0a0a14;
-        }
-        #canvas-container canvas { display: block; }
-        .badge {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
             justify-content: center;
+            overflow: hidden;
+            position: relative;
         }
-        .badge span {
-            font-size: 0.72rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            color: rgba(255,255,255,0.7);
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
+
+        /* ── Scanlines CRT ──────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 200;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255,255,255,0.022) 0px,
+                rgba(255,255,255,0.022) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+            pointer-events: none;
+        }
+
+        /* ── Grid de fondo ──────────────────────────────────────── */
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+            background-size: 44px 44px;
+        }
+
+        /* ── Resplandor de fondo ────────────────────────────────── */
+        .bg-glow {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(ellipse 60% 50% at 50% 50%,
+                rgba(0, 229, 255, 0.04) 0%,
+                transparent 70%);
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           CARD PRINCIPAL
+           ══════════════════════════════════════════════════════════ */
+
+        .render-card {
+            position: relative; z-index: 10;
+            width: 540px;
+            max-width: calc(100vw - 20px);
+            border: 2px solid var(--border);
+            background: var(--card);
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.06),
+                0 0 40px rgba(255,255,255,0.05),
+                0 0 100px rgba(0,229,255,0.04);
+            animation: bootUp 0.8s ease, flicker 9s infinite 3s;
+        }
+
+        @keyframes bootUp {
+            from { opacity: 0; transform: scale(0.96) translateY(12px); filter: blur(4px); }
+            to   { opacity: 1; transform: scale(1) translateY(0);       filter: blur(0); }
+        }
+
+        @keyframes flicker {
+            0%,100% { opacity: 1; }
+            91%     { opacity: 1; }
+            92%     { opacity: 0.5; }
+            93%     { opacity: 1; }
+            96%     { opacity: 0.7; }
+            97%     { opacity: 1; }
+        }
+
+        /* Esquinas decorativas */
+        .corner-tl, .corner-tr, .corner-bl, .corner-br {
+            position: absolute; width: 18px; height: 18px; z-index: 30;
+        }
+        .corner-tl { top: -2px;  left: -2px;  border-top: 3px solid var(--cyan); border-left:  3px solid var(--cyan); }
+        .corner-tr { top: -2px;  right: -2px; border-top: 3px solid var(--cyan); border-right: 3px solid var(--cyan); }
+        .corner-bl { bottom: -2px; left: -2px;  border-bottom: 3px solid var(--cyan); border-left:  3px solid var(--cyan); }
+        .corner-br { bottom: -2px; right: -2px; border-bottom: 3px solid var(--cyan); border-right: 3px solid var(--cyan); }
+
+        /* ── Terminal Header ────────────────────────────────────── */
+        .terminal-header {
+            background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.18);
+            padding: 7px 14px;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .terminal-dots { display: flex; gap: 5px; }
+        .terminal-dot {
+            width: 8px; height: 8px;
+            border: 1px solid var(--muted);
+            background: transparent;
+        }
+        .terminal-dot.on {
+            background: var(--white);
+            border-color: var(--white);
+            box-shadow: 0 0 6px rgba(255,255,255,0.8);
+        }
+
+        .terminal-title {
+            font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+            color: var(--dim); flex: 1; text-align: center;
+        }
+
+        .terminal-status {
+            font-size: 9px; letter-spacing: 2px;
+            color: var(--cyan);
+            text-shadow: 0 0 8px rgba(0,229,255,0.7);
+            animation: blink 1.4s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ── Canvas 3D ──────────────────────────────────────────── */
+        #canvas-container {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        #canvas-container canvas { display: block; }
+
+        /* Scanlines sobre el canvas */
+        #canvas-container::after {
+            content: '';
+            position: absolute; inset: 0; z-index: 10;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.18) 0px,
+                rgba(0,0,0,0.18) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+        }
+
+        /* Viñeta en el canvas */
+        #canvas-container::before {
+            content: '';
+            position: absolute; inset: 0; z-index: 9;
+            background: radial-gradient(ellipse at center,
+                transparent 50%,
+                rgba(0,0,0,0.65) 100%);
+            pointer-events: none;
+        }
+
+        /* Esquinas del canvas */
+        .cv-corner {
+            position: absolute; width: 22px; height: 22px; z-index: 11; pointer-events: none;
+        }
+        .cv-corner.tl { top: 10px;    left: 10px;    border-top: 1px solid rgba(0,229,255,0.45); border-left:  1px solid rgba(0,229,255,0.45); }
+        .cv-corner.tr { top: 10px;    right: 10px;   border-top: 1px solid rgba(0,229,255,0.45); border-right: 1px solid rgba(0,229,255,0.45); }
+        .cv-corner.bl { bottom: 10px; left: 10px;    border-bottom: 1px solid rgba(0,229,255,0.45); border-left:  1px solid rgba(0,229,255,0.45); }
+        .cv-corner.br { bottom: 10px; right: 10px;   border-bottom: 1px solid rgba(0,229,255,0.45); border-right: 1px solid rgba(0,229,255,0.45); }
+
+        /* Etiquetas laterales del canvas */
+        .cv-label {
+            position: absolute; z-index: 11; pointer-events: none;
+            font-size: 7px; letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(0,229,255,0.25);
+            writing-mode: vertical-rl;
+        }
+        .cv-label.left  { left: 6px;  top: 50%; transform: translateY(-50%) rotate(180deg); }
+        .cv-label.right { right: 6px; top: 50%; transform: translateY(-50%); }
+
+        /* Coordenadas (esquinas) */
+        .cv-coord {
+            position: absolute; z-index: 11; pointer-events: none;
+            font-size: 7px; letter-spacing: 1px;
+            color: rgba(255,255,255,0.18);
+        }
+        .cv-coord.tl { top: 14px;    left: 38px;  }
+        .cv-coord.tr { top: 14px;    right: 38px; text-align: right; }
+        .cv-coord.bl { bottom: 14px; left: 38px;  }
+        .cv-coord.br { bottom: 14px; right: 38px; text-align: right; }
+
+        /* Barra de scan animada sobre el canvas */
+        .cv-scan {
+            position: absolute; left: 0; right: 0; height: 2px; z-index: 12;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(0,229,255,0.3) 30%,
+                rgba(0,229,255,0.7) 50%,
+                rgba(0,229,255,0.3) 70%,
+                transparent 100%);
+            animation: scanLine 4s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scanLine {
+            0%   { top: -2px; opacity: 0; }
+            5%   { opacity: 1; }
+            95%  { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* ── Stats Bar ──────────────────────────────────────────── */
+        .stats-bar {
+            padding: 9px 14px;
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 0 6px;
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .stat-item:last-child { border-right: none; }
+
+        .stat-label {
+            font-size: 7px; letter-spacing: 3px; text-transform: uppercase;
+            color: var(--muted); display: block; margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 12px;
+            color: var(--cyan);
+            text-shadow: 0 0 10px rgba(0,229,255,0.6);
+            letter-spacing: 1px;
+            display: block;
+        }
+
+        /* ── Divider ────────────────────────────────────────────── */
+        .divider-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--muted), transparent);
+            opacity: 0.4;
+        }
+
+        /* ── Footer ─────────────────────────────────────────────── */
+        .render-footer {
+            padding: 9px 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .footer-dot {
+            width: 6px; height: 6px;
+            background: var(--white);
+            box-shadow: 0 0 7px rgba(255,255,255,0.8);
+            flex-shrink: 0;
+            animation: pulseDot 2s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%,100% { opacity: 1; box-shadow: 0 0 7px rgba(255,255,255,0.8); }
+            50%     { opacity: 0.3; box-shadow: none; }
+        }
+
+        .footer-text {
+            font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--muted); flex: 1;
+        }
+
+        .footer-hint {
+            font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(0,229,255,0.25);
+        }
+
+        /* ── Responsive ─────────────────────────────────────────── */
+        @media (max-width: 580px) {
+            #canvas-container { height: 300px; }
+            .cv-label { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="card-header">
-            <h1>Cubo Interactivo</h1>
-            <p>Arrastra para rotar · Scroll para hacer zoom</p>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <div class="render-card">
+        <!-- Esquinas -->
+        <div class="corner-tl"></div>
+        <div class="corner-tr"></div>
+        <div class="corner-bl"></div>
+        <div class="corner-br"></div>
+
+        <!-- Header terminal -->
+        <div class="terminal-header">
+            <div class="terminal-dots">
+                <div class="terminal-dot on"></div>
+                <div class="terminal-dot on"></div>
+                <div class="terminal-dot"></div>
+            </div>
+            <span class="terminal-title">HOLOSPHERE // RENDER ENGINE v2.4</span>
+            <span class="terminal-status">&#9679; LIVE</span>
         </div>
-        <div id="canvas-container"></div>
-        <div class="badge">
-            <span>🔴 Rojo</span>
-            <span>🟠 Naranja</span>
-            <span>🟡 Amarillo</span>
-            <span>🟢 Verde</span>
-            <span>🔵 Azul</span>
-            <span>🟣 Morado</span>
+
+        <!-- Canvas 3D -->
+        <div id="canvas-container">
+            <div class="cv-corner tl"></div>
+            <div class="cv-corner tr"></div>
+            <div class="cv-corner bl"></div>
+            <div class="cv-corner br"></div>
+            <div class="cv-label left">ARRASTRA // ROTA</div>
+            <div class="cv-label right">SCROLL // ZOOM</div>
+            <div class="cv-coord tl">X:+00.00</div>
+            <div class="cv-coord tr" id="coord-tr">Y:+00.00</div>
+            <div class="cv-coord bl">Z:+00.00</div>
+            <div class="cv-coord br" id="coord-br">&#9632; REC</div>
+            <div class="cv-scan"></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">VERTICES</span>
+                <span class="stat-value">482</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">FACES</span>
+                <span class="stat-value">960</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">ROT·Y</span>
+                <span class="stat-value" id="stat-rot">0.00&deg;</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">MODO</span>
+                <span class="stat-value">WIRE</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">FPS</span>
+                <span class="stat-value" id="stat-fps">60</span>
+            </div>
+        </div>
+
+        <div class="divider-line"></div>
+
+        <!-- Footer -->
+        <div class="render-footer">
+            <div class="footer-dot"></div>
+            <span class="footer-text">SISTEMA ACTIVO // HOLOGRAPHIC SPHERE</span>
+            <span class="footer-hint">[ DRAG &middot; SCROLL ]</span>
         </div>
     </div>
 
@@ -96,44 +382,139 @@
         const W = container.clientWidth;
         const H = container.clientHeight;
 
+        /* ── Escena ─────────────────────────────────────────── */
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+        scene.background = new THREE.Color(0x000000);
+
+        const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 1000);
         camera.position.z = 2.8;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(W, H);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Cubo con un color diferente por cara
-        const geometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
-        const materials = [
-            new THREE.MeshStandardMaterial({ color: 0xe74c3c }), // derecha   – rojo
-            new THREE.MeshStandardMaterial({ color: 0xe67e22 }), // izquierda – naranja
-            new THREE.MeshStandardMaterial({ color: 0xf1c40f }), // arriba    – amarillo
-            new THREE.MeshStandardMaterial({ color: 0x2ecc71 }), // abajo     – verde
-            new THREE.MeshStandardMaterial({ color: 0x3498db }), // frente    – azul
-            new THREE.MeshStandardMaterial({ color: 0x9b59b6 }), // atrás     – morado
-        ];
-        const cube = new THREE.Mesh(geometry, materials);
-        scene.add(cube);
+        /* ── Esfera wireframe principal (blanca) ─────────────── */
+        const geoMain = new THREE.SphereGeometry(1.0, 24, 18);
+        const matMain = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.82,
+        });
+        const sphere = new THREE.Mesh(geoMain, matMain);
+        scene.add(sphere);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(3, 4, 5);
-        scene.add(dirLight);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        /* ── Capa de brillo cyan interior ───────────────────── */
+        const geoGlow = new THREE.SphereGeometry(0.97, 24, 18);
+        const matGlow = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.10,
+        });
+        const sphereGlow = new THREE.Mesh(geoGlow, matGlow);
+        scene.add(sphereGlow);
 
+        /* ── Capa exterior muy tenue ─────────────────────────── */
+        const geoOuter = new THREE.SphereGeometry(1.035, 12, 8);
+        const matOuter = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.05,
+        });
+        const sphereOuter = new THREE.Mesh(geoOuter, matOuter);
+        scene.add(sphereOuter);
+
+        /* ── Anillo ecuatorial ───────────────────────────────── */
+        const geoRing = new THREE.TorusGeometry(1.06, 0.004, 8, 128);
+        const matRing = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0.55,
+        });
+        const ring = new THREE.Mesh(geoRing, matRing);
+        ring.rotation.x = Math.PI / 2;
+        scene.add(ring);
+
+        /* ── Partículas flotantes ────────────────────────────── */
+        const ptGeo = new THREE.BufferGeometry();
+        const ptCount = 120;
+        const ptPos = new Float32Array(ptCount * 3);
+        for (let i = 0; i < ptCount * 3; i++) {
+            ptPos[i] = (Math.random() - 0.5) * 5;
+        }
+        ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
+        const ptMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.012,
+            transparent: true,
+            opacity: 0.35,
+        });
+        const particles = new THREE.Points(ptGeo, ptMat);
+        scene.add(particles);
+
+        /* ── OrbitControls ───────────────────────────────────── */
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
+        controls.enableDamping   = true;
+        controls.dampingFactor   = 0.05;
+        controls.minDistance     = 1.6;
+        controls.maxDistance     = 5.5;
+        controls.autoRotate      = false;
 
+        /* ── Stats (DOM) ─────────────────────────────────────── */
+        const elRot = document.getElementById('stat-rot');
+        const elFps = document.getElementById('stat-fps');
+        const elCoordTR = document.getElementById('coord-tr');
+
+        let frame = 0;
+        let lastTime = performance.now();
+        let fps = 60;
+
+        /* ── Loop ────────────────────────────────────────────── */
         function animate() {
             requestAnimationFrame(animate);
-            cube.rotation.y += 0.005;
+            frame++;
+
+            // Rotación suave
+            sphere.rotation.y      += 0.003;
+            sphere.rotation.x      += 0.0004;
+            sphereGlow.rotation.y  += 0.003;
+            sphereGlow.rotation.x  += 0.0004;
+            sphereOuter.rotation.y += 0.002;
+            sphereOuter.rotation.x -= 0.0003;
+            ring.rotation.z        += 0.0008;
+            particles.rotation.y   += 0.0004;
+
+            // Pulso de opacidad (efecto holograma)
+            const pulse = 0.72 + Math.sin(frame * 0.025) * 0.10;
+            matMain.opacity = pulse;
+
+            // Actualizar stats cada 10 frames
+            if (frame % 10 === 0) {
+                const now = performance.now();
+                fps = Math.round(1000 / ((now - lastTime) / 10));
+                lastTime = now;
+                const deg = ((sphere.rotation.y % (Math.PI * 2)) * (180 / Math.PI)).toFixed(1);
+                elRot.textContent = deg + '\u00b0';
+                elFps.textContent = fps;
+                elCoordTR.textContent = 'Y:+' + deg.padStart(5, '0');
+            }
+
             controls.update();
             renderer.render(scene, camera);
         }
         animate();
+
+        /* ── Resize ──────────────────────────────────────────── */
+        window.addEventListener('resize', () => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
     </script>
 </body>
 </html>
