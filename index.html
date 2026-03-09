@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODELO ATÓMICO // RENDER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:            #08001a;
+            --purple-bright: #A855F7;
+            --purple-mid:    #7C3AED;
+            --purple-light:  #C4B5FD;
+            --purple-dark:   #2E1065;
+            --white:         #ffffff;
+            --dim:           #cccccc;
+            --muted:         #777777;
+            --pink:          #F472B6;
+            --blue:          #60A5FA;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            color: var(--white);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Canvas a pantalla completa */
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        #canvas-container canvas {
+            display: block;
+        }
+
+        /* ─── HUD HEADER ─────────────────────────────────────── */
+        .hud-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 20;
+            padding: 14px 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(to bottom, rgba(8,0,26,0.75) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(168,85,247,0.12);
+        }
+
+        .hud-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--purple-bright);
+            box-shadow: 0 0 10px var(--purple-bright);
+            animation: pulseDot 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulseDot {
+            0%,100% { opacity: 1; box-shadow: 0 0 10px var(--purple-bright); }
+            50%      { opacity: 0.35; box-shadow: none; }
+        }
+
+        .hud-title {
+            font-size: 10px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+
+        .hud-status {
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: var(--purple-bright);
+            text-shadow: 0 0 10px rgba(168,85,247,0.9);
+            margin-left: auto;
+            animation: blink 1.8s step-end infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ─── STATS (izquierda) ──────────────────────────────── */
+        .hud-stats {
+            position: fixed;
+            top: 58px;
+            left: 22px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hud-stat-label {
+            font-size: 7px;
+            letter-spacing: 3px;
+            color: var(--muted);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .hud-stat-value {
+            font-size: 14px;
+            color: var(--purple-light);
+            text-shadow: 0 0 8px rgba(196,181,253,0.5);
+            letter-spacing: 1px;
+            display: block;
+        }
+
+        /* ─── CONTROLES (abajo-izquierda) ────────────────────── */
+        .hud-controls {
+            position: fixed;
+            bottom: 24px;
+            left: 22px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            width: 38px; height: 38px;
+            border: 1px solid rgba(168,85,247,0.45);
+            background: rgba(8,0,26,0.75);
+            color: var(--purple-light);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .ctrl-btn:hover {
+            border-color: var(--purple-bright);
+            background: rgba(124,58,237,0.25);
+            color: var(--white);
+            box-shadow: 0 0 14px rgba(168,85,247,0.45);
+        }
+
+        .ctrl-btn:active {
+            transform: scale(0.93);
+        }
+
+        .ctrl-btn-reset {
+            font-size: 20px;
+        }
+
+        .ctrl-label {
+            font-size: 7px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        /* ─── PANEL INFO (abajo-derecha) ─────────────────────── */
+        .info-panel {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 20;
+            width: 270px;
+            background: rgba(8, 0, 26, 0.88);
+            border: 1px solid rgba(168,85,247,0.3);
+            box-shadow:
+                0 0 30px rgba(124,58,237,0.18),
+                inset 0 0 20px rgba(124,58,237,0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Línea superior decorativa */
+        .info-panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 20%; right: 20%; height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--purple-mid),
+                var(--purple-bright),
+                var(--purple-mid),
+                transparent);
+        }
+
+        /* Esquinas decorativas del panel */
+        .panel-corner {
+            position: absolute;
+            width: 10px; height: 10px;
+        }
+        .panel-corner.tl { top:-1px; left:-1px; border-top:2px solid var(--purple-bright); border-left:2px solid var(--purple-bright); }
+        .panel-corner.tr { top:-1px; right:-1px; border-top:2px solid var(--purple-bright); border-right:2px solid var(--purple-bright); }
+        .panel-corner.bl { bottom:-1px; left:-1px; border-bottom:2px solid var(--purple-bright); border-left:2px solid var(--purple-bright); }
+        .panel-corner.br { bottom:-1px; right:-1px; border-bottom:2px solid var(--purple-bright); border-right:2px solid var(--purple-bright); }
+
+        .info-header {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(168,85,247,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-header-dot {
+            width: 6px; height: 6px;
+            background: var(--purple-bright);
+            box-shadow: 0 0 6px var(--purple-bright);
+            flex-shrink: 0;
+        }
+
+        .info-header-title {
+            font-size: 8px;
+            letter-spacing: 3px;
+            color: var(--purple-light);
+            text-transform: uppercase;
+        }
+
+        .info-body {
+            padding: 12px 14px;
+        }
+
+        .info-section {
+            margin-bottom: 9px;
+        }
+
+        .info-section:last-child { margin-bottom: 0; }
+
+        .info-section-label {
+            font-size: 7px;
+            letter-spacing: 3px;
+            color: var(--purple-bright);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .info-particle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .particle-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .particle-dot.proton   { background: var(--pink);  box-shadow: 0 0 6px var(--pink); }
+        .particle-dot.neutron  { background: var(--blue);  box-shadow: 0 0 6px var(--blue); }
+        .particle-dot.electron { background: var(--purple-bright); box-shadow: 0 0 6px var(--purple-bright); }
+
+        .particle-name  { font-size: 9px; color: var(--dim); letter-spacing: 1px; }
+        .particle-desc  { font-size: 8px; color: var(--muted); margin-left: auto; letter-spacing: 0.5px; }
+
+        .info-text {
+            font-size: 8.5px;
+            color: var(--dim);
+            line-height: 1.65;
+            letter-spacing: 0.3px;
+        }
+
+        .info-divider {
+            height: 1px;
+            background: rgba(168,85,247,0.15);
+            margin: 8px 0;
+        }
+
+        /* ─── RESPONSIVE ─────────────────────────────────────── */
+        @media (max-width: 620px) {
+            .hud-stats { display: none; }
+            .info-panel {
+                width: calc(100vw - 80px);
+                bottom: 16px;
+                right: 16px;
+            }
+            .hud-controls {
+                bottom: 16px;
+                left: 16px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .info-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Header -->
+    <div class="hud-header">
+        <div class="hud-dot"></div>
+        <span class="hud-title">MODELO ATÓMICO // RENDER ENGINE v3.0</span>
+        <span class="hud-status">● ACTIVO</span>
+    </div>
+
+    <!-- Stats izquierda -->
+    <div class="hud-stats">
+        <div>
+            <span class="hud-stat-label">ROT·Y</span>
+            <span class="hud-stat-value" id="stat-rot">0.00°</span>
+        </div>
+        <div>
+            <span class="hud-stat-label">ZOOM</span>
+            <span class="hud-stat-value" id="stat-zoom">1.00x</span>
+        </div>
+        <div>
+            <span class="hud-stat-label">FPS</span>
+            <span class="hud-stat-value" id="stat-fps">60</span>
+        </div>
+        <div>
+            <span class="hud-stat-label">ELECTRONES</span>
+            <span class="hud-stat-value">3</span>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="hud-controls">
+        <button class="ctrl-btn" id="btn-zoom-in" title="Acercar">+</button>
+        <button class="ctrl-btn" id="btn-zoom-out" title="Alejar">−</button>
+        <button class="ctrl-btn ctrl-btn-reset" id="btn-reset" title="Restablecer vista">↺</button>
+        <span class="ctrl-label">DRAG·ZOOM</span>
+    </div>
+
+    <!-- Panel de información -->
+    <div class="info-panel">
+        <div class="panel-corner tl"></div>
+        <div class="panel-corner tr"></div>
+        <div class="panel-corner bl"></div>
+        <div class="panel-corner br"></div>
+
+        <div class="info-header">
+            <div class="info-header-dot"></div>
+            <span class="info-header-title">COMPONENTES DEL ÁTOMO</span>
+        </div>
+
+        <div class="info-body">
+
+            <div class="info-section">
+                <span class="info-section-label">NÚCLEO</span>
+                <div class="info-particle">
+                    <div class="particle-dot proton"></div>
+                    <span class="particle-name">PROTÓN</span>
+                    <span class="particle-desc">CARGA +1</span>
+                </div>
+                <div class="info-particle">
+                    <div class="particle-dot neutron"></div>
+                    <span class="particle-name">NEUTRÓN</span>
+                    <span class="particle-desc">CARGA 0</span>
+                </div>
+            </div>
+
+            <div class="info-divider"></div>
+
+            <div class="info-section">
+                <span class="info-section-label">CORTEZA ELECTRÓNICA</span>
+                <div class="info-particle">
+                    <div class="particle-dot electron"></div>
+                    <span class="particle-name">ELECTRÓN</span>
+                    <span class="particle-desc">CARGA −1</span>
+                </div>
+            </div>
+
+            <div class="info-divider"></div>
+
+            <div class="info-section">
+                <span class="info-section-label">¿QUÉ ES UN ÁTOMO?</span>
+                <p class="info-text">
+                    La unidad más pequeña de la materia que conserva
+                    las propiedades de un elemento químico. Su núcleo
+                    concentra casi toda la masa, mientras los electrones
+                    orbitan en niveles de energía cuantizados.
+                </p>
+            </div>
+
+            <div class="info-divider"></div>
+
+            <div class="info-section">
+                <span class="info-section-label">ESCALA</span>
+                <p class="info-text">
+                    Diámetro atómico: ~1×10⁻¹⁰ m<br>
+                    Diámetro del núcleo: ~10⁻¹⁵ m<br>
+                    El átomo es 99.9% espacio vacío
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const container = document.getElementById('canvas-container');
+
+        // ─── ESCENA ───────────────────────────────────────────────
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x08001a);
+
+        // ─── CÁMARA ───────────────────────────────────────────────
+        const camera = new THREE.PerspectiveCamera(
+            50,
+            window.innerWidth / window.innerHeight,
+            0.1, 500
+        );
+        camera.position.set(0, 0, 5.5);
+
+        // ─── RENDERER ─────────────────────────────────────────────
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // ─── PARTÍCULAS (estrellas) ───────────────────────────────
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(400 * 3);
+        for (let i = 0; i < 400 * 3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 60;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.06,
+            transparent: true,
+            opacity: 0.55,
+        })));
+
+        // ─── GRUPO PRINCIPAL (todo el modelo atómico) ─────────────
+        const atomGroup = new THREE.Group();
+        scene.add(atomGroup);
+
+        // ─── NÚCLEO ───────────────────────────────────────────────
+        const nucleusGroup = new THREE.Group();
+        atomGroup.add(nucleusGroup);
+
+        // Esfera principal del núcleo
+        const nucleusMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.32, 32, 32),
+            new THREE.MeshBasicMaterial({ color: 0xA855F7 })
+        );
+        nucleusGroup.add(nucleusMesh);
+
+        // Halo exterior del núcleo
+        const haloMat = new THREE.MeshBasicMaterial({
+            color: 0x7C3AED,
+            transparent: true,
+            opacity: 0.22,
+        });
+        const haloMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.50, 16, 16),
+            haloMat
+        );
+        nucleusGroup.add(haloMesh);
+
+        // Segundo halo
+        const halo2Mat = new THREE.MeshBasicMaterial({
+            color: 0xA855F7,
+            transparent: true,
+            opacity: 0.08,
+        });
+        nucleusGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.70, 12, 12),
+            halo2Mat
+        ));
+
+        // Wireframe sobre el núcleo
+        nucleusGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.32, 10, 8),
+            new THREE.MeshBasicMaterial({
+                color: 0xC4B5FD,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.35,
+            })
+        ));
+
+        // Partículas internas (protones/neutrones)
+        const innerColors = [0xF472B6, 0x60A5FA, 0xF472B6, 0x60A5FA, 0xA855F7, 0xF472B6];
+        innerColors.forEach(() => {
+            const p = new THREE.Mesh(
+                new THREE.SphereGeometry(0.055 + Math.random() * 0.025, 6, 6),
+                new THREE.MeshBasicMaterial({ color: innerColors[Math.floor(Math.random() * innerColors.length)] })
+            );
+            const theta = Math.random() * Math.PI * 2;
+            const phi   = Math.random() * Math.PI;
+            const r     = Math.random() * 0.18;
+            p.position.set(
+                r * Math.sin(phi) * Math.cos(theta),
+                r * Math.sin(phi) * Math.sin(theta),
+                r * Math.cos(phi)
+            );
+            nucleusGroup.add(p);
+        });
+
+        // ─── ÓRBITAS + ELECTRONES ────────────────────────────────
+        // Cada órbita: un grupo de orientación + anillo + electrón
+        const orbitData = [
+            { rotX: Math.PI / 2,    rotY: 0,           rotZ: 0,           color: 0xA855F7, glowColor: 0x7C3AED, eOffset: 0.0 },
+            { rotX: Math.PI / 5,    rotY: Math.PI / 4, rotZ: Math.PI / 3, color: 0x9333EA, glowColor: 0x6D28D9, eOffset: 2.09 },
+            { rotX: -Math.PI / 5,   rotY: -Math.PI/4,  rotZ: -Math.PI/3,  color: 0xC084FC, glowColor: 0xA855F7, eOffset: 4.19 },
+        ];
+
+        const electronSpinGroups = [];
+
+        orbitData.forEach((cfg, i) => {
+            const orientGroup = new THREE.Group();
+            orientGroup.rotation.set(cfg.rotX, cfg.rotY, cfg.rotZ);
+            atomGroup.add(orientGroup);
+
+            // Anillo principal
+            orientGroup.add(new THREE.Mesh(
+                new THREE.TorusGeometry(1.55, 0.018, 8, 140),
+                new THREE.MeshBasicMaterial({
+                    color: cfg.color,
+                    transparent: true,
+                    opacity: 0.85,
+                })
+            ));
+
+            // Halo del anillo (más grueso, menos opaco)
+            orientGroup.add(new THREE.Mesh(
+                new THREE.TorusGeometry(1.55, 0.048, 8, 60),
+                new THREE.MeshBasicMaterial({
+                    color: cfg.glowColor,
+                    transparent: true,
+                    opacity: 0.15,
+                })
+            ));
+
+            // Grupo de spin para el electrón
+            const spinGroup = new THREE.Group();
+            spinGroup.rotation.z = cfg.eOffset;
+            orientGroup.add(spinGroup);
+
+            // Electrón
+            const eGroup = new THREE.Group();
+            eGroup.position.set(1.55, 0, 0);
+
+            eGroup.add(new THREE.Mesh(
+                new THREE.SphereGeometry(0.075, 12, 12),
+                new THREE.MeshBasicMaterial({ color: 0xEDE9FE })
+            ));
+
+            // Halo del electrón
+            eGroup.add(new THREE.Mesh(
+                new THREE.SphereGeometry(0.16, 8, 8),
+                new THREE.MeshBasicMaterial({
+                    color: cfg.color,
+                    transparent: true,
+                    opacity: 0.3,
+                })
+            ));
+
+            spinGroup.add(eGroup);
+            electronSpinGroups.push({ spin: spinGroup, speed: 0.012 + i * 0.004 });
+        });
+
+        // ─── ORBIT CONTROLS ───────────────────────────────────────
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping  = true;
+        controls.dampingFactor  = 0.06;
+        controls.minDistance    = 2.2;
+        controls.maxDistance    = 18;
+        controls.enablePan      = false;
+        controls.autoRotate     = false;
+
+        // ─── BOTONES DE ZOOM ──────────────────────────────────────
+        document.getElementById('btn-zoom-in').addEventListener('click', () => {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            const dist = camera.position.length();
+            if (dist > controls.minDistance + 0.3)
+                camera.position.addScaledVector(dir, dist * 0.18);
+        });
+
+        document.getElementById('btn-zoom-out').addEventListener('click', () => {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            const dist = camera.position.length();
+            if (dist < controls.maxDistance - 0.5)
+                camera.position.addScaledVector(dir, -dist * 0.18);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            camera.position.set(0, 0, 5.5);
+            camera.lookAt(0, 0, 0);
+            controls.reset();
+        });
+
+        // ─── STATS ────────────────────────────────────────────────
+        const elRot  = document.getElementById('stat-rot');
+        const elFps  = document.getElementById('stat-fps');
+        const elZoom = document.getElementById('stat-zoom');
+
+        let frame = 0, lastTime = performance.now(), fps = 60;
+
+        // ─── LOOP ─────────────────────────────────────────────────
+        function animate() {
+            requestAnimationFrame(animate);
+            frame++;
+
+            // Rotación lenta del átomo completo
+            atomGroup.rotation.y += 0.003;
+
+            // Rotación suave del núcleo
+            nucleusGroup.rotation.y += 0.006;
+            nucleusGroup.rotation.x += 0.002;
+
+            // Electrones orbitando
+            electronSpinGroups.forEach(e => {
+                e.spin.rotation.z += e.speed;
+            });
+
+            // Pulso del halo del núcleo
+            haloMat.opacity = 0.18 + Math.sin(frame * 0.045) * 0.08;
+
+            // Stats cada 10 frames
+            if (frame % 10 === 0) {
+                const now = performance.now();
+                fps = Math.round(1000 / ((now - lastTime) / 10));
+                lastTime = now;
+
+                const deg = ((atomGroup.rotation.y % (Math.PI * 2)) * 180 / Math.PI).toFixed(1);
+                elRot.textContent  = deg + '°';
+                elFps.textContent  = Math.min(fps, 60);
+
+                const dist = camera.position.length();
+                elZoom.textContent = (5.5 / dist).toFixed(2) + 'x';
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ─── RESIZE ───────────────────────────────────────────────
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
